@@ -1,5 +1,6 @@
 import os
 import hashlib
+import math
 import re
 import secrets
 import sqlite3
@@ -297,7 +298,7 @@ def validate_product_payload(payload):
     else:
         try:
             price_value = float(price_raw)
-            if price_value < 0:
+            if not math.isfinite(price_value) or price_value < 0:
                 errors.append("Selling price must be 0 or greater.")
         except ValueError:
             errors.append("Selling price must be a valid number.")
@@ -324,7 +325,7 @@ def validate_product_payload(payload):
     if cost_price_raw:
         try:
             cost_price_value = float(cost_price_raw)
-            if cost_price_value < 0:
+            if not math.isfinite(cost_price_value) or cost_price_value < 0:
                 errors.append("Cost price cannot be negative.")
         except ValueError:
             errors.append("Cost price must be a valid number.")
@@ -332,7 +333,7 @@ def validate_product_payload(payload):
     if tax_rate_raw:
         try:
             tax_rate_value = float(tax_rate_raw)
-            if not 0 <= tax_rate_value <= 100:
+            if not math.isfinite(tax_rate_value) or not 0 <= tax_rate_value <= 100:
                 errors.append("Tax rate must be between 0 and 100.")
         except ValueError:
             errors.append("Tax rate must be a valid number.")
@@ -599,8 +600,7 @@ def add_product():
         validation_errors = validate_product_payload(form_data)
         field_errors = get_field_errors(validation_errors or [], PRODUCT_FIELD_MESSAGE_MAP)
         if validation_errors:
-            for error in validation_errors:
-                flash(error, "danger")
+            flash("Please fill the required fields and fix the highlighted errors.", "danger")
             return render_template("add_product.html", form_data=form_data, field_errors=field_errors)
 
         name = form_data.get("name", "").strip()
@@ -666,7 +666,8 @@ def add_product():
 
         if error:
             flash(error, "danger")
-            return render_template("add_product.html", form_data=form_data, field_errors={})
+            field_errors = {"sku": error} if error == "That SKU is already registered." else {}
+            return render_template("add_product.html", form_data=form_data, field_errors=field_errors)
 
         flash("Product added successfully.", "success")
         return redirect(url_for("add_product"))

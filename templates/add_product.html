@@ -10,7 +10,7 @@
         </div>
         <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
     </div>
-    <form class="workspace-form" method="post" novalidate>
+    <form class="workspace-form" method="post" novalidate onsubmit="return validateProductForm(event);">
         <div class="form-grid product-form-grid">
             <div class="mb-3 field-group {% if field_errors.get('name') %}has-error{% endif %}">
                 <label for="name">Product name</label>
@@ -161,18 +161,77 @@
     </form>
 </section>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('.workspace-form');
-        if (!form) return;
+    const productForm = document.querySelector('.workspace-form');
+    const productRequiredMessages = {
+        name: 'Product name is required.',
+        sku: 'SKU is required.',
+        price: 'Selling price is required.',
+        product_group: 'Product group is required.',
+        unit: 'Unit is required.'
+    };
 
-        const showClientError = (field, message) => {
-            const group = field.closest('.field-group');
-            if (!group) return;
+    function getProductFieldError(field) {
+        const name = field.name;
+        const value = (field.value || '').trim();
 
-            field.classList.remove('is-valid');
+        if (!field.disabled && field.required && !value) {
+            return productRequiredMessages[name] || 'This field is required.';
+        }
+        if (name === 'name' && value && (value.length < 2 || value.length > 120)) {
+            return 'Product name must be between 2 and 120 characters.';
+        }
+        if (name === 'sku' && value && !/^[A-Za-z0-9][A-Za-z0-9._\-/ ]{0,59}$/.test(value)) {
+            return 'SKU format is invalid.';
+        }
+        if (name === 'price' && value && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+            return 'Selling price must be 0 or greater.';
+        }
+        if (name === 'product_group' && value && (value.length < 2 || value.length > 80)) {
+            return 'Product group must be between 2 and 80 characters.';
+        }
+        if (name === 'unit' && value && !['piece', 'box', 'kg', 'litre', 'service'].includes(value)) {
+            return 'Unit is required.';
+        }
+        if (['category', 'brand'].includes(name) && value && (value.length < 2 || value.length > 80)) {
+            return `${name[0].toUpperCase()}${name.slice(1)} must be between 2 and 80 characters.`;
+        }
+        if (name === 'description' && value.length > 500) {
+            return 'Description cannot exceed 500 characters.';
+        }
+        if (name === 'cost_price' && value && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+            return 'Cost price cannot be negative.';
+        }
+        if (name === 'tax_rate' && value && (!Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 100)) {
+            return 'Tax rate must be between 0 and 100.';
+        }
+        if (['stock_quantity', 'reorder_level'].includes(name) && value && (!Number.isInteger(Number(value)) || Number(value) < 0)) {
+            return `${name === 'stock_quantity' ? 'Opening stock' : 'Reorder level'} must be a valid whole number.`;
+        }
+        if (name === 'supplier' && value && (value.length < 2 || value.length > 120)) {
+            return 'Supplier must be between 2 and 120 characters.';
+        }
+        if (name === 'barcode' && value && !/^[A-Za-z0-9\-]{6,80}$/.test(value)) {
+            return 'Barcode format is invalid.';
+        }
+        if (name === 'status' && value && !['active', 'inactive'].includes(value)) {
+            return 'Status must be active or inactive.';
+        }
+        return '';
+    }
+
+    function renderProductFieldState(field, showEmptyError) {
+        const group = field.closest('.field-group');
+        if (!group) return true;
+
+        const message = getProductFieldError(field);
+        const shouldShowError = message && (showEmptyError || field.value.trim());
+        let errorBox = group.querySelector('.field-error');
+        field.classList.remove('is-invalid', 'is-valid');
+        field.removeAttribute('aria-invalid');
+
+        if (shouldShowError) {
             field.classList.add('is-invalid');
-
-            let errorBox = group.querySelector('.field-error');
+            field.setAttribute('aria-invalid', 'true');
             if (!errorBox) {
                 errorBox = document.createElement('div');
                 errorBox.className = 'field-error';
@@ -180,79 +239,44 @@
                 group.appendChild(errorBox);
             }
             errorBox.textContent = message;
-        };
+            return false;
+        }
 
-        const clearClientError = (field) => {
-            const group = field.closest('.field-group');
-            if (!group) return;
+        if (errorBox) errorBox.remove();
+        if (field.value.trim()) field.classList.add('is-valid');
+        return !message;
+    }
 
-            field.classList.remove('is-invalid');
-            const existingError = group.querySelector('.field-error');
-            if (existingError) {
-                existingError.remove();
-            }
-        };
+    function validateProductForm(event) {
+        if (!productForm) return true;
+        let valid = true;
+        const fields = productForm.querySelectorAll('input, select, textarea');
 
-        form.addEventListener('submit', function (event) {
-            let valid = true;
-            const fields = form.querySelectorAll('input, select, textarea');
-
-            fields.forEach((field) => {
-                clearClientError(field);
-
-                const name = field.name;
-                const value = (field.value || '').trim();
-                let message = '';
-
-                if (!field.disabled && field.required && !value) {
-                    message = 'This field is required.';
-                } else if (name === 'name' && value && (value.length < 2 || value.length > 120)) {
-                    message = 'Product name must be between 2 and 120 characters.';
-                } else if (name === 'sku' && value && !/^[A-Za-z0-9][A-Za-z0-9._\-/ ]{0,59}$/.test(value)) {
-                    message = 'SKU format is invalid.';
-                } else if (name === 'price' && value && (Number.isNaN(Number(value)) || Number(value) < 0)) {
-                    message = 'Selling price must be 0 or greater.';
-                } else if (name === 'product_group' && value && (value.length < 2 || value.length > 80)) {
-                    message = 'Product group must be between 2 and 80 characters.';
-                } else if (name === 'unit' && value && !['piece', 'box', 'kg', 'litre', 'service'].includes(value)) {
-                    message = 'Unit is required.';
-                } else if (name === 'category' && value && (value.length < 2 || value.length > 80)) {
-                    message = 'Category must be between 2 and 80 characters.';
-                } else if (name === 'brand' && value && (value.length < 2 || value.length > 80)) {
-                    message = 'Brand must be between 2 and 80 characters.';
-                } else if (name === 'tax_rate' && value && (Number.isNaN(Number(value)) || Number(value) < 0 || Number(value) > 100)) {
-                    message = 'Tax rate must be between 0 and 100.';
-                } else if (name === 'stock_quantity' && value && (!Number.isInteger(Number(value)) || Number(value) < 0)) {
-                    message = 'Opening stock must be a valid whole number.';
-                } else if (name === 'reorder_level' && value && (!Number.isInteger(Number(value)) || Number(value) < 0)) {
-                    message = 'Reorder level must be a valid whole number.';
-                } else if (name === 'supplier' && value && (value.length < 2 || value.length > 120)) {
-                    message = 'Supplier must be between 2 and 120 characters.';
-                } else if (name === 'barcode' && value && !/^[A-Za-z0-9\-]{6,80}$/.test(value)) {
-                    message = 'Barcode format is invalid.';
-                } else if (name === 'status' && value && !['active', 'inactive'].includes(value)) {
-                    message = 'Status must be active or inactive.';
-                }
-
-                if (message) {
-                    valid = false;
-                    showClientError(field, message);
-                    field.setAttribute('aria-invalid', 'true');
-                } else if (value) {
-                    field.classList.remove('is-invalid');
-                    field.classList.add('is-valid');
-                    field.removeAttribute('aria-invalid');
-                }
-            });
-
-            if (!valid) {
-                event.preventDefault();
-                const firstInvalid = form.querySelector('.is-invalid');
-                if (firstInvalid) {
-                    firstInvalid.focus();
-                }
-            }
+        fields.forEach((field) => {
+            if (!renderProductFieldState(field, true)) valid = false;
         });
-    });
+
+        if (!valid) {
+            event.preventDefault();
+            const firstInvalid = productForm.querySelector('.is-invalid');
+            if (firstInvalid) firstInvalid.focus();
+            return false;
+        }
+
+        const submitButton = productForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.setAttribute('aria-busy', 'true');
+        }
+        return true;
+    }
+
+    if (productForm) {
+        productForm.querySelectorAll('input, select, textarea').forEach((field) => {
+            field.addEventListener('blur', () => renderProductFieldState(field, true));
+            field.addEventListener('input', () => renderProductFieldState(field, true));
+            field.addEventListener('change', () => renderProductFieldState(field, true));
+        });
+    }
 </script>
 {% endblock %}
