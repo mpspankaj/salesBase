@@ -1,4 +1,5 @@
 import unittest
+import sqlite3
 from uuid import uuid4
 
 from app import app
@@ -36,11 +37,12 @@ class ProductFormStateTests(unittest.TestCase):
         with client.session_transaction() as session:
             session["user_id"] = 1
 
+        sku = f"SP-{uuid4().hex[:12]}"
         save_response = client.post(
             "/products/new",
             data={
                 "name": "Saved Product",
-                "sku": f"SP-{uuid4().hex[:12]}",
+                "sku": sku,
                 "price": "149.99",
                 "product_group": "General",
                 "category": "Electronics",
@@ -55,6 +57,9 @@ class ProductFormStateTests(unittest.TestCase):
         )
         self.assertEqual(save_response.status_code, 200)
         self.assertIn('Product added successfully.', save_response.get_data(as_text=True))
+        with sqlite3.connect(app.config["DATABASE"]) as db:
+            db.execute("DELETE FROM products WHERE sku = ?", (sku,))
+            db.commit()
 
 
 if __name__ == "__main__":

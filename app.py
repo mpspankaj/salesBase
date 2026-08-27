@@ -591,6 +591,22 @@ def dashboard():
     return render_template("dashboard.html", username=session["username"])
 
 
+@app.route("/products")
+@login_required
+def products():
+    rows = get_db().execute(
+        "SELECT id, name, sku, price_cents, product_group, category, brand, description, "
+        "unit, cost_price_cents, tax_rate, stock_quantity, reorder_level, supplier, "
+        "barcode, status, created_at FROM products ORDER BY id DESC"
+    ).fetchall()
+    product_list = []
+    for row in rows:
+        product = dict(row)
+        product["search_text"] = " ".join(str(value or "") for value in row)
+        product_list.append(product)
+    return render_template("products.html", products=product_list)
+
+
 @app.route("/products/new", methods=("GET", "POST"))
 @login_required
 def add_product():
@@ -670,9 +686,105 @@ def add_product():
             return render_template("add_product.html", form_data=form_data, field_errors=field_errors)
 
         flash("Product added successfully.", "success")
-        return redirect(url_for("add_product"))
+        return redirect(url_for("products"))
 
     return render_template("add_product.html", form_data={}, field_errors={})
+
+
+@app.route("/products/<int:product_id>/edit", methods=("GET", "POST"))
+@login_required
+def edit_product(product_id):
+    product = get_db().execute(
+        "SELECT * FROM products WHERE id = ?", (product_id,)
+    ).fetchone()
+    if product is None:
+        flash("Product not found.", "danger")
+        return redirect(url_for("products"))
+
+    if request.method == "GET":
+        form_data = {
+            "name": product["name"],
+            "sku": product["sku"],
+            "price": f"{product['price_cents'] / 100:.2f}",
+            "product_group": product["product_group"],
+            "category": product["category"] or "",
+            "brand": product["brand"] or "",
+            "description": product["description"] or "",
+            "unit": product["unit"],
+            "cost_price": "" if product["cost_price_cents"] is None else f"{product['cost_price_cents'] / 100:.2f}",
+            "tax_rate": str(product["tax_rate"]),
+            "stock_quantity": str(product["stock_quantity"]),
+            "reorder_level": str(product["reorder_level"]),
+            "supplier": product["supplier"] or "",
+            "barcode": product["barcode"] or "",
+            "status": product["status"],
+        }
+        return render_template(
+            "add_product.html",
+            form_data=form_data,
+            field_errors={},
+            editing_product=product,
+        )
+
+    form_data = request.form.to_dict()
+    validation_errors = validate_product_payload(form_data)
+    field_errors = get_field_errors(validation_errors or [], PRODUCT_FIELD_MESSAGE_MAP)
+    if validation_errors:
+        flash("Please fill the required fields and fix the highlighted errors.", "danger")
+        return render_template(
+            "add_product.html",
+            form_data=form_data,
+            field_errors=field_errors,
+            editing_product=product,
+        )
+
+    try:
+        price_cents = round(float(form_data["price"]) * 100)
+        cost_price_cents = round(float(form_data["cost_price"]) * 100) if form_data.get("cost_price", "").strip() else None
+        tax_rate_value = float(form_data.get("tax_rate", "0").strip() or 0)
+        stock_quantity_value = int(form_data.get("stock_quantity", "0").strip() or 0)
+        reorder_level_value = int(form_data.get("reorder_level", "0").strip() or 0)
+    except (TypeError, ValueError):
+        flash("Enter valid non-negative prices, tax, and stock values.", "danger")
+        return render_template(
+            "add_product.html",
+            form_data=form_data,
+            field_errors={},
+            editing_product=product,
+        )
+
+    try:
+        get_db().execute(
+            "UPDATE products SET name = ?, sku = ?, price_cents = ?, product_group = ?, category = ?, brand = ?, description = ?, unit = ?, cost_price_cents = ?, tax_rate = ?, stock_quantity = ?, reorder_level = ?, supplier = ?, barcode = ?, status = ? WHERE id = ?",
+            (
+                form_data["name"].strip(), form_data["sku"].strip(), price_cents,
+                form_data.get("product_group", "General").strip(), form_data.get("category", "").strip() or None,
+                form_data.get("brand", "").strip() or None, form_data.get("description", "").strip() or None,
+                form_data.get("unit", "piece").strip(), cost_price_cents, tax_rate_value,
+                stock_quantity_value, reorder_level_value, form_data.get("supplier", "").strip() or None,
+                form_data.get("barcode", "").strip() or None, form_data.get("status", "active").strip(), product_id,
+            ),
+        )
+        get_db().commit()
+    except sqlite3.IntegrityError:
+        flash("That SKU is already registered.", "danger")
+        return render_template(
+            "add_product.html",
+            form_data=form_data,
+            field_errors={"sku": "That SKU is already registered."},
+            editing_product=product,
+        )
+    except sqlite3.OperationalError:
+        flash("The database is busy. Please try again in a moment.", "danger")
+        return render_template(
+            "add_product.html",
+            form_data=form_data,
+            field_errors={},
+            editing_product=product,
+        )
+
+    flash("Product updated successfully.", "success")
+    return redirect(url_for("products"))
 
 
 @app.route("/sales-app")

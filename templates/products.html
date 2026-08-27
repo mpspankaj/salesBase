@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Products | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel product-management-panel">
+    <div class="workspace-heading">
+        <div>
+            <p class="eyebrow">Product catalogue</p>
+            <h1>Manage <em>products.</em></h1>
+            <p class="dashboard-copy">Browse, search and maintain your product records.</p>
+        </div>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
+    </div>
+
+    <nav class="product-tabs" aria-label="Product sections">
+        <a class="product-tab active" href="{{ url_for('products') }}">Product list</a>
+        <a class="product-tab" href="{{ url_for('add_product') }}">Add product</a>
+    </nav>
+
+    <div class="product-list-toolbar">
+        <label class="product-search" for="product-search">
+            <span aria-hidden="true">&#8981;</span>
+            <input id="product-search" type="search" placeholder="Search any product field..." autocomplete="off">
+        </label>
+        <div class="product-list-options">
+            <label class="page-size-control" for="page-size">Rows per page</label>
+            <select id="page-size" class="page-size-select">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            <span id="product-result-count" class="table-meta">{{ products|length }} products</span>
+        </div>
+    </div>
+
+    <div class="table-scroll-wrap">
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>SKU</th>
+                    <th>Price</th>
+                    <th>Group</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody id="product-table-body">
+                {% for product in products %}
+                <tr class="product-row" data-search="{{ product.search_text|lower|e }}">
+                    <td><strong>{{ product.name|e }}</strong></td>
+                    <td>{{ product.sku|e }}</td>
+                    <td>{{ '%.2f'|format(product.price_cents / 100) }}</td>
+                    <td>{{ product.product_group|e }}</td>
+                    <td>{{ (product.category or '-')|e }}</td>
+                    <td>{{ product.unit|e }}</td>
+                    <td>{{ product.stock_quantity }}</td>
+                    <td><span class="status-pill status-{{ product.status }}">{{ product.status|capitalize }}</span>
+                    </td>
+                    <td><a class="table-action" href="{{ url_for('edit_product', product_id=product.id) }}">Edit</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="empty-table" colspan="9">No products found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="product-pagination" aria-label="Product table pagination">
+        <span id="product-page-status" class="table-meta"></span>
+        <div class="pagination-actions">
+            <button id="product-previous" class="btn btn-secondary" type="button">Previous</button>
+            <button id="product-next" class="btn btn-secondary" type="button">Next</button>
+        </div>
+    </div>
+</section>
+<script src="{{ url_for('static', filename='pagination.js') }}"></script>
+<script>
+    createClientPagination({
+        rowSelector: '.product-row',
+        searchSelector: '#product-search',
+        pageSizeSelector: '#page-size',
+        resultCountSelector: '#product-result-count',
+        pageStatusSelector: '#product-page-status',
+        previousSelector: '#product-previous',
+        nextSelector: '#product-next',
+        storageKey: 'sales-products-page-size-v2'
+    });
+</script>
+{% endblock %}

@@ -1,16 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Add product | Sales{% endblock %}
+{% block title %}{{ 'Edit product' if editing_product else 'Add product' }} | Sales{% endblock %}
 {% block content %}
 <section class="workspace-panel">
     <div class="workspace-heading">
         <div>
             <p class="eyebrow">Product catalogue</p>
-            <h1>Add a <em>product.</em></h1>
-            <p class="dashboard-copy">Create the first record in your product catalogue.</p>
+            <h1>{{ 'Edit the' if editing_product else 'Add a' }} <em>product.</em></h1>
+            <p class="dashboard-copy">{{ 'Update this product record.' if editing_product else 'Create a new record in
+                your product catalogue.' }}</p>
         </div>
         <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
     </div>
-    <form class="workspace-form" method="post" novalidate onsubmit="return validateProductForm(event);">
+    <nav class="product-tabs" aria-label="Product sections">
+        <a class="product-tab" href="{{ url_for('products') }}">Product list</a>
+        <a class="product-tab active" href="{{ url_for('add_product') }}">{{ 'Edit product' if editing_product else 'Add
+            product' }}</a>
+    </nav>
+    <form class="workspace-form" method="post"
+        action="{{ url_for('edit_product', product_id=editing_product['id']) if editing_product else url_for('add_product') }}"
+        novalidate onsubmit="return validateProductForm(event);">
         <div class="form-grid product-form-grid">
             <div class="mb-3 field-group {% if field_errors.get('name') %}has-error{% endif %}">
                 <label for="name">Product name</label>
@@ -157,7 +165,8 @@
                 {% endif %}
             </div>
         </div>
-        <button class="btn btn-primary" type="submit">Add product <span aria-hidden="true">&#8594;</span></button>
+        <button class="btn btn-primary" type="submit">{{ 'Save changes' if editing_product else 'Add product' }} <span
+                aria-hidden="true">&#8594;</span></button>
     </form>
 </section>
 <script>
