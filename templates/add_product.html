@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Add product | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel">
+    <div class="workspace-heading">
+        <div>
+            <p class="eyebrow">Product catalogue</p>
+            <h1>Add a <em>product.</em></h1>
+            <p class="dashboard-copy">Create the first record in your product catalogue.</p>
+        </div>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
+    </div>
+    <form class="workspace-form" method="post" novalidate>
+        <div class="form-grid product-form-grid">
+            <div class="mb-3 field-group {% if field_errors.get('name') %}has-error{% endif %}">
+                <label for="name">Product name</label>
+                <input id="name" name="name" type="text" maxlength="120" value="{{ form_data.get('name', '')|e }}"
+                    class="{% if field_errors.get('name') %}is-invalid{% elif form_data.get('name') %}is-valid{% endif %}"
+                    required autofocus>
+                {% if field_errors.get('name') %}
+                <div class="field-error" role="alert">{{ field_errors.get('name') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('sku') %}has-error{% endif %}">
+                <label for="sku">SKU</label>
+                <input id="sku" name="sku" type="text" maxlength="60" value="{{ form_data.get('sku', '')|e }}"
+                    class="{% if field_errors.get('sku') %}is-invalid{% elif form_data.get('sku') %}is-valid{% endif %}"
+                    required>
+                {% if field_errors.get('sku') %}
+                <div class="field-error" role="alert">{{ field_errors.get('sku') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('price') %}has-error{% endif %}">
+                <label for="price">Price <small>in your currency</small></label>
+                <input id="price" name="price" type="number" min="0" step="0.01" inputmode="decimal"
+                    value="{{ form_data.get('price', '')|e }}"
+                    class="{% if field_errors.get('price') %}is-invalid{% elif form_data.get('price') %}is-valid{% endif %}"
+                    required>
+                {% if field_errors.get('price') %}
+                <div class="field-error" role="alert">{{ field_errors.get('price') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('product_group') %}has-error{% endif %}">
+                <label for="product_group">Product group</label>
+                <input id="product_group" name="product_group" type="text"
+                    value="{{ form_data.get('product_group', 'General')|e }}" maxlength="80"
+                    class="{% if field_errors.get('product_group') %}is-invalid{% elif form_data.get('product_group') %}is-valid{% endif %}"
+                    required>
+                {% if field_errors.get('product_group') %}
+                <div class="field-error" role="alert">{{ field_errors.get('product_group') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('category') %}has-error{% endif %}">
+                <label for="category">Category</label>
+                <input id="category" name="category" type="text" maxlength="80"
+                    value="{{ form_data.get('category', '')|e }}"
+                    class="{% if field_errors.get('category') %}is-invalid{% endif %}">
+                {% if field_errors.get('category') %}
+                <div class="field-error" role="alert">{{ field_errors.get('category') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('brand') %}has-error{% endif %}">
+                <label for="brand">Brand</label>
+                <input id="brand" name="brand" type="text" maxlength="80" value="{{ form_data.get('brand', '')|e }}"
+                    class="{% if field_errors.get('brand') %}is-invalid{% endif %}">
+                {% if field_errors.get('brand') %}
+                <div class="field-error" role="alert">{{ field_errors.get('brand') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('unit') %}has-error{% endif %}">
+                <label for="unit">Unit</label>
+                <select id="unit" name="unit" class="{% if field_errors.get('unit') %}is-invalid{% endif %}" required>
+                    <option value="piece" {% if form_data.get('unit', 'piece' )=='piece' %}selected{% endif %}>Piece
+                    </option>
+                    <option value="box" {% if form_data.get('unit')=='box' %}selected{% endif %}>Box</option>
+                    <option value="kg" {% if form_data.get('unit')=='kg' %}selected{% endif %}>Kilogram</option>
+                    <option value="litre" {% if form_data.get('unit')=='litre' %}selected{% endif %}>Litre</option>
+                    <option value="service" {% if form_data.get('unit')=='service' %}selected{% endif %}>Service
+                    </option>
+                </select>
+                {% if field_errors.get('unit') %}
+                <div class="field-error" role="alert">{{ field_errors.get('unit') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('cost_price') %}has-error{% endif %}">
+                <label for="cost_price">Cost price</label>
+                <input id="cost_price" name="cost_price" type="number" min="0" step="0.01" inputmode="decimal"
+                    value="{{ form_data.get('cost_price', '')|e }}"
+                    class="{% if field_errors.get('cost_price') %}is-invalid{% endif %}">
+                {% if field_errors.get('cost_price') %}
+                <div class="field-error" role="alert">{{ field_errors.get('cost_price') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('tax_rate') %}has-error{% endif %}">
+                <label for="tax_rate">Tax rate <small>%</small></label>
+                <input id="tax_rate" name="tax_rate" type="number" min="0" max="100" step="0.01"
+                    value="{{ form_data.get('tax_rate', '0')|e }}" inputmode="decimal"
+                    class="{% if field_errors.get('tax_rate') %}is-invalid{% endif %}">
+                {% if field_errors.get('tax_rate') %}
+                <div class="field-error" role="alert">{{ field_errors.get('tax_rate') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('stock_quantity') %}has-error{% endif %}">
+                <label for="stock_quantity">Opening stock</label>
+                <input id="stock_quantity" name="stock_quantity" type="number" min="0" step="1"
+                    value="{{ form_data.get('stock_quantity', '0')|e }}" inputmode="numeric"
+                    class="{% if field_errors.get('stock_quantity') %}is-invalid{% endif %}">
+                {% if field_errors.get('stock_quantity') %}
+                <div class="field-error" role="alert">{{ field_errors.get('stock_quantity') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('reorder_level') %}has-error{% endif %}">
+                <label for="reorder_level">Reorder level</label>
+                <input id="reorder_level" name="reorder_level" type="number" min="0" step="1"
+                    value="{{ form_data.get('reorder_level', '0')|e }}" inputmode="numeric"
+                    class="{% if field_errors.get('reorder_level') %}is-invalid{% endif %}">
+                {% if field_errors.get('reorder_level') %}
+                <div class="field-error" role="alert">{{ field_errors.get('reorder_level') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('supplier') %}has-error{% endif %}">
+                <label for="supplier">Supplier</label>
+                <input id="supplier" name="supplier" type="text" maxlength="120"
+                    value="{{ form_data.get('supplier', '')|e }}"
+                    class="{% if field_errors.get('supplier') %}is-invalid{% endif %}">
+                {% if field_errors.get('supplier') %}
+                <div class="field-error" role="alert">{{ field_errors.get('supplier') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('barcode') %}has-error{% endif %}">
+                <label for="barcode">Barcode</label>
+                <input id="barcode" name="barcode" type="text" maxlength="80"
+                    value="{{ form_data.get('barcode', '')|e }}"
+                    class="{% if field_errors.get('barcode') %}is-invalid{% endif %}">
+                {% if field_errors.get('barcode') %}
+                <div class="field-error" role="alert">{{ field_errors.get('barcode') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 field-group {% if field_errors.get('status') %}has-error{% endif %}">
+                <label for="status">Status</label>
+                <select id="status" name="status" class="{% if field_errors.get('status') %}is-invalid{% endif %}">
+                    <option value="active" {% if form_data.get('status', 'active' )=='active' %}selected{% endif %}>
+                        Active</option>
+                    <option value="inactive" {% if form_data.get('status')=='inactive' %}selected{% endif %}>Inactive
+                    </option>
+                </select>
+                {% if field_errors.get('status') %}
+                <div class="field-error" role="alert">{{ field_errors.get('status') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-4 full-width-field field-group {% if field_errors.get('description') %}has-error{% endif %}">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3" maxlength="500"
+                    class="{% if field_errors.get('description') %}is-invalid{% endif %}">{{ form_data.get('description', '')|e }}</textarea>
+                {% if field_errors.get('description') %}
+                <div class="field-error" role="alert">{{ field_errors.get('description') }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Add product <span aria-hidden="true">&#8594;</span></button>
+    </form>
+</section>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('.workspace-form');
+        if (!form) return;
+
+        const showClientError = (field, message) => {
+            const group = field.closest('.field-group');
+            if (!group) return;
+
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+
+            let errorBox = group.querySelector('.field-error');
+            if (!errorBox) {
+                errorBox = document.createElement('div');
+                errorBox.className = 'field-error';
+                errorBox.setAttribute('role', 'alert');
+                group.appendChild(errorBox);
+            }
+            errorBox.textContent = message;
+        };
+
+        const clearClientError = (field) => {
+            const group = field.closest('.field-group');
+            if (!group) return;
+
+            field.classList.remove('is-invalid');
+            const existingError = group.querySelector('.field-error');
+            if (existingError) {
+                existingError.remove();
+            }
+        };
+
+        form.addEventListener('submit', function (event) {
+            let valid = true;
+            const fields = form.querySelectorAll('input, select, textarea');
+
+            fields.forEach((field) => {
+                clearClientError(field);
+
+                const name = field.name;
+                const value = (field.value || '').trim();
+                let message = '';
+
+                if (!field.disabled && field.required && !value) {
+                    message = 'This field is required.';
+                } else if (name === 'name' && value && (value.length < 2 || value.length > 120)) {
+                    message = 'Product name must be between 2 and 120 characters.';
+                } else if (name === 'sku' && value && !/^[A-Za-z0-9][A-Za-z0-9._\-/ ]{0,59}$/.test(value)) {
+                    message = 'SKU format is invalid.';
+                } else if (name === 'price' && value && (Number.isNaN(Number(value)) || Number(value) < 0)) {
+                    message = 'Selling price must be 0 or greater.';
+                } else if (name === 'product_group' && value && (value.length < 2 || value.length > 80)) {
+                    message = 'Product group must be between 2 and 80 characters.';
+                } else if (name === 'unit' && value && !['piece', 'box', 'kg', 'litre', 'service'].includes(value)) {
+                    message = 'Unit is required.';
+                } else if (name === 'category' && value && (value.length < 2 || value.length > 80)) {
+                    message = 'Category must be between 2 and 80 characters.';
+                } else if (name === 'brand' && value && (value.length < 2 || value.length > 80)) {
+                    message = 'Brand must be between 2 and 80 characters.';
+                } else if (name === 'tax_rate' && value && (Number.isNaN(Number(value)) || Number(value) < 0 || Number(value) > 100)) {
+                    message = 'Tax rate must be between 0 and 100.';
+                } else if (name === 'stock_quantity' && value && (!Number.isInteger(Number(value)) || Number(value) < 0)) {
+                    message = 'Opening stock must be a valid whole number.';
+                } else if (name === 'reorder_level' && value && (!Number.isInteger(Number(value)) || Number(value) < 0)) {
+                    message = 'Reorder level must be a valid whole number.';
+                } else if (name === 'supplier' && value && (value.length < 2 || value.length > 120)) {
+                    message = 'Supplier must be between 2 and 120 characters.';
+                } else if (name === 'barcode' && value && !/^[A-Za-z0-9\-]{6,80}$/.test(value)) {
+                    message = 'Barcode format is invalid.';
+                } else if (name === 'status' && value && !['active', 'inactive'].includes(value)) {
+                    message = 'Status must be active or inactive.';
+                }
+
+                if (message) {
+                    valid = false;
+                    showClientError(field, message);
+                    field.setAttribute('aria-invalid', 'true');
+                } else if (value) {
+                    field.classList.remove('is-invalid');
+                    field.classList.add('is-valid');
+                    field.removeAttribute('aria-invalid');
+                }
+            });
+
+            if (!valid) {
+                event.preventDefault();
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

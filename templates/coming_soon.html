@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ section }} | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel coming-soon-panel">
+    <p class="eyebrow">Sales workspace</p>
+    <h1>{{ section }} <em>next.</em></h1>
+    <p class="dashboard-copy">This area is ready in the navigation. The {{ section|lower }} workflow will be added next.
+    </p>
+    <a class="text-link" href="{{ url_for('dashboard') }}">&#8592; Back to dashboard</a>
+</section>
+{% endblock %}

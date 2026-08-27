@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Sales{% endblock %}
+{% block content %}
+<section class="dashboard-panel">
+    <div class="dashboard-heading">
+        <div>
+            <p class="eyebrow">Sales App / Home</p>
+            <h1>Seller <em>Home</em></h1>
+            <p class="dashboard-copy">Good to see you, {{ username }}. Here is your workspace at a glance.</p>
+        </div>
+        <span class="status-chip">Today</span>
+    </div>
+    <div class="summary-grid">
+        <article class="summary-card"><span class="card-icon">&#9673;</span><small>PARTIES</small><strong>0</strong><span class="card-note">Ready to add</span></article>
+        <article class="summary-card"><span class="card-icon">&#9635;</span><small>ITEMS</small><strong>0</strong><span class="card-note">Product catalogue</span></article>
+        <article class="summary-card summary-card-accent"><span class="card-icon">&#9656;</span><small>SALES APP</small><strong>Start here</strong><span class="card-note">Your sales workspace</span></article>
+    </div>
+    <div class="dashboard-section-heading"><div><h2>Quick actions</h2><p>Set up your masters before recording sales.</p></div></div>
+    <div class="dashboard-actions">
+        <a class="action-link" href="{{ url_for('add_product') }}"><strong>Add item</strong><small>Create a product master record</small><span>&#8594;</span></a>
+        <a class="action-link" href="{{ url_for('customers') }}"><strong>Add party</strong><small>Party master is ready for setup</small><span>&#8594;</span></a>
+    </div>
+</section>
+{% endblock %}

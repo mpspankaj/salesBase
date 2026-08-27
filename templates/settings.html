@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Settings | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel settings-panel">
+    <p class="eyebrow">App configuration</p>
+    <h1>Navigation <em>settings.</em></h1>
+    <p class="dashboard-copy">Choose which workspace tabs are visible in the app navigation.</p>
+    <form class="settings-form" method="post">
+        <label class="setting-row" for="show_sales_app"><span><strong>Sales App</strong><small>Sales workspace and
+                    product actions</small></span><input id="show_sales_app" name="show_sales_app" type="checkbox" {% if
+                settings.show_sales_app %}checked{% endif %}></label>
+        <label class="setting-row" for="show_products"><span><strong>Products</strong><small>Product catalogue and
+                    add-product page</small></span><input id="show_products" name="show_products" type="checkbox" {% if
+                settings.show_products %}checked{% endif %}></label>
+        <label class="setting-row" for="show_customers"><span><strong>Customers</strong><small>Customer
+                    workspace</small></span><input id="show_customers" name="show_customers" type="checkbox" {% if
+                settings.show_customers %}checked{% endif %}></label>
+        <button class="btn btn-primary" type="submit">Save settings <span aria-hidden="true">&#8594;</span></button>
+    </form>
+</section>
+{% endblock %}

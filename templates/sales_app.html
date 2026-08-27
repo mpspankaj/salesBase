@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Sales App | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel sales-app-panel">
+    <div class="workspace-heading">
+        <div>
+            <p class="eyebrow">Sales App</p>
+            <h1>Move business<br><em>forward.</em></h1>
+            <p class="dashboard-copy">Start with your product catalogue, then build out the rest of your sales workflow.
+            </p>
+        </div>
+        <span class="status-chip">App workspace</span>
+    </div>
+    <div class="sales-app-actions">
+        <a class="action-link action-link-primary" href="{{ url_for('add_product') }}"><strong>Add
+                product</strong><small>Create a new product in your catalogue</small><span>&#8594;</span></a>
+        <a class="action-link" href="{{ url_for('customers') }}"><strong>Customers</strong><small>Customer tools are
+                coming next</small><span>&#8594;</span></a>
+    </div>
+</section>
+{% endblock %}
