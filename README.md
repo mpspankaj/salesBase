@@ -54,6 +54,10 @@ The navigation preferences are stored in the SQLite `app_settings` table and are
 
 The product master includes the core commercial and inventory fields: product name, SKU, selling price, product group, category, brand, description, unit of measure, cost price, tax rate, opening stock, reorder level, supplier, barcode, status, and created timestamp. Existing databases are upgraded automatically at startup without deleting existing products.
 
+## Customer master and invoices
+
+The customer master supports list search, configurable pagination, add, edit, and delete. It stores customer name, unique customer code, phone, email, tax ID/GSTIN, billing address, shipping address, city, state, postal code, country, invoice notes, status, and created timestamp for future invoice printing.
+
 ## SQLite concurrency
 
 SQLite is initialized in WAL mode automatically. Database connections use a 30-second busy timeout by default (configurable with `DATABASE_TIMEOUT`), and registration write connections commit and close immediately after the insert so they do not hold a write connection open longer than necessary.

@@ -81,6 +81,26 @@ def init_db():
                 created_at TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+            CREATE TABLE IF NOT EXISTS customers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                customer_code TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                phone TEXT NOT NULL,
+                email TEXT,
+                tax_id TEXT,
+                billing_address TEXT NOT NULL,
+                shipping_address TEXT,
+                city TEXT,
+                state TEXT,
+                postal_code TEXT,
+                country TEXT NOT NULL DEFAULT 'India',
+                notes TEXT,
+                status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);
+            CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+            CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
             CREATE TABLE IF NOT EXISTS app_settings (
                 setting_key TEXT PRIMARY KEY,
                 setting_value TEXT NOT NULL CHECK (setting_value IN ('0', '1'))
@@ -111,6 +131,39 @@ def init_db():
                 db.execute(f"ALTER TABLE products ADD COLUMN {column} {definition}")
         db.execute("CREATE INDEX IF NOT EXISTS idx_products_group ON products(product_group)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode)")
+        existing_customer_columns = {
+            row[1] for row in db.execute("PRAGMA table_info(customers)").fetchall()
+        }
+        customer_columns = {
+            "name": "TEXT NOT NULL DEFAULT ''",
+            "customer_code": "TEXT NOT NULL DEFAULT ''",
+            "phone": "TEXT NOT NULL DEFAULT ''",
+            "email": "TEXT",
+            "tax_id": "TEXT",
+            "billing_address": "TEXT NOT NULL DEFAULT ''",
+            "shipping_address": "TEXT",
+            "city": "TEXT",
+            "state": "TEXT",
+            "postal_code": "TEXT",
+            "country": "TEXT NOT NULL DEFAULT 'India'",
+            "notes": "TEXT",
+            "status": "TEXT NOT NULL DEFAULT 'active'",
+            "created_at": "TEXT NOT NULL DEFAULT ''",
+        }
+        for column, definition in customer_columns.items():
+            if column not in existing_customer_columns:
+                db.execute(f"ALTER TABLE customers ADD COLUMN {column} {definition}")
+        customer_codes = set()
+        for customer_id, customer_code in db.execute("SELECT id, customer_code FROM customers ORDER BY id"):
+            normalized_code = (customer_code or "").strip()
+            if not normalized_code or normalized_code.casefold() in customer_codes:
+                normalized_code = f"LEGACY-CUSTOMER-{customer_id}"
+                db.execute("UPDATE customers SET customer_code = ? WHERE id = ?", (normalized_code, customer_id))
+            customer_codes.add(normalized_code.casefold())
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_code_unique ON customers(customer_code)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)")
         db.commit()
     finally:
         db.close()
@@ -213,6 +266,24 @@ REGISTER_FIELD_MESSAGE_MAP = {
         "Confirm password is required.",
         "Passwords do not match.",
     ],
+}
+
+VALID_CUSTOMER_STATUSES = {"active", "inactive"}
+
+CUSTOMER_FIELD_MESSAGE_MAP = {
+    "name": ["Customer name is required.", "Customer name must be between 2 and 120 characters."],
+    "customer_code": ["Customer code is required.", "Customer code format is invalid."],
+    "phone": ["Phone number is required.", "Phone number format is invalid."],
+    "email": ["Email address format is invalid.", "Email address must be 120 characters or fewer."],
+    "tax_id": ["Tax ID must be 120 characters or fewer."],
+    "billing_address": ["Billing address is required.", "Billing address must be 250 characters or fewer."],
+    "shipping_address": ["Shipping address must be 250 characters or fewer."],
+    "city": ["City must be 80 characters or fewer."],
+    "state": ["State must be 80 characters or fewer."],
+    "postal_code": ["Postal code must be 20 characters or fewer."],
+    "country": ["Country is required.", "Country must be 80 characters or fewer."],
+    "notes": ["Notes cannot exceed 500 characters."],
+    "status": ["Status must be active or inactive."],
 }
 
 
@@ -364,6 +435,65 @@ def validate_product_payload(payload):
     if status and status not in VALID_PRODUCT_STATUSES:
         errors.append("Status must be active or inactive.")
 
+    return errors or None
+
+
+def validate_customer_payload(payload):
+    errors = []
+    data = {key: (value.strip() if isinstance(value, str) else value) for key, value in (payload or {}).items()}
+    name = str(data.get("name", "")).strip()
+    customer_code = str(data.get("customer_code", "")).strip()
+    phone = str(data.get("phone", "")).strip()
+    email = str(data.get("email", "")).strip().lower()
+    tax_id = str(data.get("tax_id", "")).strip()
+    billing_address = str(data.get("billing_address", "")).strip()
+    shipping_address = str(data.get("shipping_address", "")).strip()
+    city = str(data.get("city", "")).strip()
+    state = str(data.get("state", "")).strip()
+    postal_code = str(data.get("postal_code", "")).strip()
+    country = str(data.get("country", "")).strip()
+    notes = str(data.get("notes", "")).strip()
+    status = str(data.get("status", "")).strip()
+
+    if not name:
+        errors.append("Customer name is required.")
+    elif not 2 <= len(name) <= 120:
+        errors.append("Customer name must be between 2 and 120 characters.")
+    if not customer_code:
+        errors.append("Customer code is required.")
+    elif not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{1,39}", customer_code):
+        errors.append("Customer code format is invalid.")
+    if not phone:
+        errors.append("Phone number is required.")
+    elif not re.fullmatch(r"(?=.*[0-9])[0-9+() .-]{7,25}", phone):
+        errors.append("Phone number format is invalid.")
+    if email:
+        if not re.fullmatch(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}", email):
+            errors.append("Email address format is invalid.")
+        elif len(email) > 120:
+            errors.append("Email address must be 120 characters or fewer.")
+    if tax_id and len(tax_id) > 120:
+        errors.append("Tax ID must be 120 characters or fewer.")
+    if not billing_address:
+        errors.append("Billing address is required.")
+    elif len(billing_address) > 250:
+        errors.append("Billing address must be 250 characters or fewer.")
+    if len(shipping_address) > 250:
+        errors.append("Shipping address must be 250 characters or fewer.")
+    if len(city) > 80:
+        errors.append("City must be 80 characters or fewer.")
+    if len(state) > 80:
+        errors.append("State must be 80 characters or fewer.")
+    if len(postal_code) > 20:
+        errors.append("Postal code must be 20 characters or fewer.")
+    if not country:
+        errors.append("Country is required.")
+    elif len(country) > 80:
+        errors.append("Country must be 80 characters or fewer.")
+    if len(notes) > 500:
+        errors.append("Notes cannot exceed 500 characters.")
+    if status and status not in VALID_CUSTOMER_STATUSES:
+        errors.append("Status must be active or inactive.")
     return errors or None
 
 
@@ -588,7 +718,10 @@ def reset_password(token):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", username=session["username"])
+    db = get_db()
+    customer_count = db.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
+    product_count = db.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+    return render_template("dashboard.html", username=session["username"], customer_count=customer_count, product_count=product_count)
 
 
 @app.route("/products")
@@ -605,6 +738,25 @@ def products():
         product["search_text"] = " ".join(str(value or "") for value in row)
         product_list.append(product)
     return render_template("products.html", products=product_list)
+
+
+@app.route("/products/<int:product_id>/delete", methods=("POST",))
+@login_required
+def delete_product(product_id):
+    try:
+        cursor = get_db().execute(
+            "DELETE FROM products WHERE id = ?", (product_id,)
+        )
+        get_db().commit()
+    except sqlite3.OperationalError:
+        flash("The database is busy. Please try again in a moment.", "danger")
+        return redirect(url_for("products"))
+
+    if cursor.rowcount == 0:
+        flash("Product not found.", "danger")
+    else:
+        flash("Product deleted successfully.", "success")
+    return redirect(url_for("products"))
 
 
 @app.route("/products/new", methods=("GET", "POST"))
@@ -825,7 +977,108 @@ def settings():
 @app.route("/customers")
 @login_required
 def customers():
-    return render_template("coming_soon.html", section="Customers")
+    rows = get_db().execute(
+        "SELECT id, name, customer_code, phone, email, tax_id, billing_address, shipping_address, "
+        "city, state, postal_code, country, notes, status, created_at FROM customers ORDER BY id DESC"
+    ).fetchall()
+    customer_list = []
+    for row in rows:
+        customer = dict(row)
+        customer["search_text"] = " ".join(str(value or "") for value in row)
+        customer_list.append(customer)
+    return render_template("customers.html", customers=customer_list)
+
+
+@app.route("/customers/new", methods=("GET", "POST"))
+@login_required
+def add_customer():
+    form_data = request.form.to_dict() if request.method == "POST" else {}
+    if request.method == "POST":
+        validation_errors = validate_customer_payload(form_data)
+        field_errors = get_field_errors(validation_errors or [], CUSTOMER_FIELD_MESSAGE_MAP)
+        if validation_errors:
+            flash("Please fill the required fields and fix the highlighted errors.", "danger")
+            return render_template("customer_form.html", form_data=form_data, field_errors=field_errors)
+
+        try:
+            get_db().execute(
+                "INSERT INTO customers (name, customer_code, phone, email, tax_id, billing_address, shipping_address, city, state, postal_code, country, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    form_data["name"].strip(), form_data["customer_code"].strip(), form_data["phone"].strip(),
+                    form_data.get("email", "").strip().lower() or None, form_data.get("tax_id", "").strip() or None,
+                    form_data["billing_address"].strip(), form_data.get("shipping_address", "").strip() or None,
+                    form_data.get("city", "").strip() or None, form_data.get("state", "").strip() or None,
+                    form_data.get("postal_code", "").strip() or None, form_data.get("country", "India").strip(),
+                    form_data.get("notes", "").strip() or None, form_data.get("status", "active").strip(),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            get_db().commit()
+        except sqlite3.IntegrityError:
+            flash("That customer code is already registered.", "danger")
+            return render_template("customer_form.html", form_data=form_data, field_errors={"customer_code": "That customer code is already registered."})
+        except sqlite3.OperationalError:
+            flash("The database is busy. Please try again in a moment.", "danger")
+            return render_template("customer_form.html", form_data=form_data, field_errors={})
+        flash("Customer added successfully.", "success")
+        return redirect(url_for("customers"))
+    return render_template("customer_form.html", form_data={}, field_errors={})
+
+
+@app.route("/customers/<int:customer_id>/edit", methods=("GET", "POST"))
+@login_required
+def edit_customer(customer_id):
+    customer = get_db().execute("SELECT * FROM customers WHERE id = ?", (customer_id,)).fetchone()
+    if customer is None:
+        flash("Customer not found.", "danger")
+        return redirect(url_for("customers"))
+    if request.method == "GET":
+        form_data = {key: customer[key] or "" for key in (
+            "name", "customer_code", "phone", "email", "tax_id", "billing_address", "shipping_address",
+            "city", "state", "postal_code", "country", "notes", "status"
+        )}
+        return render_template("customer_form.html", form_data=form_data, field_errors={}, editing_customer=customer)
+
+    form_data = request.form.to_dict()
+    validation_errors = validate_customer_payload(form_data)
+    field_errors = get_field_errors(validation_errors or [], CUSTOMER_FIELD_MESSAGE_MAP)
+    if validation_errors:
+        flash("Please fill the required fields and fix the highlighted errors.", "danger")
+        return render_template("customer_form.html", form_data=form_data, field_errors=field_errors, editing_customer=customer)
+    try:
+        get_db().execute(
+            "UPDATE customers SET name = ?, customer_code = ?, phone = ?, email = ?, tax_id = ?, billing_address = ?, shipping_address = ?, city = ?, state = ?, postal_code = ?, country = ?, notes = ?, status = ? WHERE id = ?",
+            (
+                form_data["name"].strip(), form_data["customer_code"].strip(), form_data["phone"].strip(),
+                form_data.get("email", "").strip().lower() or None, form_data.get("tax_id", "").strip() or None,
+                form_data["billing_address"].strip(), form_data.get("shipping_address", "").strip() or None,
+                form_data.get("city", "").strip() or None, form_data.get("state", "").strip() or None,
+                form_data.get("postal_code", "").strip() or None, form_data.get("country", "India").strip(),
+                form_data.get("notes", "").strip() or None, form_data.get("status", "active").strip(), customer_id,
+            ),
+        )
+        get_db().commit()
+    except sqlite3.IntegrityError:
+        flash("That customer code is already registered.", "danger")
+        return render_template("customer_form.html", form_data=form_data, field_errors={"customer_code": "That customer code is already registered."}, editing_customer=customer)
+    except sqlite3.OperationalError:
+        flash("The database is busy. Please try again in a moment.", "danger")
+        return render_template("customer_form.html", form_data=form_data, field_errors={}, editing_customer=customer)
+    flash("Customer updated successfully.", "success")
+    return redirect(url_for("customers"))
+
+
+@app.route("/customers/<int:customer_id>/delete", methods=("POST",))
+@login_required
+def delete_customer(customer_id):
+    try:
+        cursor = get_db().execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+        get_db().commit()
+    except sqlite3.OperationalError:
+        flash("The database is busy. Please try again in a moment.", "danger")
+        return redirect(url_for("customers"))
+    flash("Customer deleted successfully." if cursor.rowcount else "Customer not found.", "success" if cursor.rowcount else "danger")
+    return redirect(url_for("customers"))
 
 
 @app.route("/sales")

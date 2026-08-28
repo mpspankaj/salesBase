@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Customers | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel product-management-panel">
+    <div class="workspace-heading">
+        <div>
+            <p class="eyebrow">Customer catalogue</p>
+            <h1>Manage <em>customers.</em></h1>
+            <p class="dashboard-copy">Maintain invoice-ready customer and billing details.</p>
+        </div>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
+    </div>
+    <nav class="product-tabs" aria-label="Customer sections">
+        <a class="product-tab active" href="{{ url_for('customers') }}">Customer list</a>
+        <a class="product-tab" href="{{ url_for('add_customer') }}">Add customer</a>
+    </nav>
+    <div class="product-list-toolbar">
+        <label class="product-search" for="customer-search"><span aria-hidden="true">&#8981;</span><input
+                id="customer-search" type="search" placeholder="Search any customer field..."
+                autocomplete="off"></label>
+        <div class="product-list-options"><label class="page-size-control" for="customer-page-size">Rows per
+                page</label><select id="customer-page-size" class="page-size-select">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select><span id="customer-result-count" class="table-meta">{{ customers|length }} customers</span></div>
+    </div>
+    <div class="table-scroll-wrap">
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Tax ID</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th>Status</th>
+                    <th><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}<tr class="customer-row"
+                    data-search="{{ customer.search_text|lower|e }}">
+                    <td><strong>{{ customer.name|e }}</strong></td>
+                    <td>{{ customer.customer_code|e }}</td>
+                    <td>{{ customer.phone|e }}</td>
+                    <td>{{ customer.email or '-' }}</td>
+                    <td>{{ customer.tax_id or '-' }}</td>
+                    <td>{{ customer.city or '-' }}</td>
+                    <td>{{ customer.state or '-' }}</td>
+                    <td><span class="status-pill status-{{ customer.status }}">{{ customer.status|capitalize }}</span>
+                    </td>
+                    <td class="table-actions"><a class="table-action"
+                            href="{{ url_for('edit_customer', customer_id=customer.id) }}">Edit</a>
+                        <form method="post" action="{{ url_for('delete_customer', customer_id=customer.id) }}"
+                            onsubmit="return confirm('Delete this customer? This action cannot be undone.');"><button
+                                class="table-action table-delete-action" type="submit">Delete</button></form>
+                    </td>
+                </tr>{% endfor %}
+                <tr id="customer-empty-row" hidden>
+                    <td class="empty-table" colspan="9">No customers found.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="product-pagination" aria-label="Customer table pagination"><span id="customer-page-status"
+            class="table-meta"></span>
+        <div class="pagination-actions"><button id="customer-previous" class="btn btn-secondary"
+                type="button">Previous</button><button id="customer-next" class="btn btn-secondary"
+                type="button">Next</button></div>
+    </div>
+</section>
+<script src="{{ url_for('static', filename='pagination.js') }}"></script>
+<script>createClientPagination({ rowSelector: '.customer-row', searchSelector: '#customer-search', pageSizeSelector: '#customer-page-size', resultCountSelector: '#customer-result-count', pageStatusSelector: '#customer-page-status', previousSelector: '#customer-previous', nextSelector: '#customer-next', itemLabel: 'customer', storageKey: 'sales-customers-page-size-v1', emptyRowSelector: '#customer-empty-row' });</script>
+{% endblock %}

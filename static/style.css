@@ -957,6 +957,22 @@ a {
   font-weight: 700;
   text-decoration: none;
 }
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.table-actions form {
+  margin: 0;
+}
+.table-delete-action {
+  padding: 0;
+  color: #b34d3d;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
 .table-action:hover {
   color: var(--coral);
 }

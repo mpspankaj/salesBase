@@ -24,9 +24,9 @@
                 href="{{ url_for('dashboard') }}"><span class="nav-icon">&#9632;</span>Dashboard</a>
             {% if app_settings.get('show_products', True) or app_settings.get('show_customers', True) %}
             <details class="sidebar-group" {% if request.endpoint in ('products', 'add_product' , 'edit_product'
-                , 'customers' ) %}open{% endif %}>
+                , 'customers' , 'add_customer' , 'edit_customer' ) %}open{% endif %}>
                 <summary
-                    class="sidebar-link {% if request.endpoint in ('add_product', 'customers') %}active{% endif %}">
+                    class="sidebar-link {% if request.endpoint in ('products', 'add_product', 'edit_product', 'customers', 'add_customer', 'edit_customer') %}active{% endif %}">
                     <span class="nav-icon">&#9635;</span><span class="sidebar-group-name">Master</span><span
                         class="group-chevron">&#8964;</span>
                 </summary>
@@ -35,7 +35,7 @@
                         class="sidebar-link sidebar-sublink {% if request.endpoint in ('products', 'add_product', 'edit_product') %}active{% endif %}"
                         href="{{ url_for('products') }}"><span class="sub-dot"></span>Product</a>{% endif %}
                     {% if app_settings.get('show_customers', True) %}<a
-                        class="sidebar-link sidebar-sublink {% if request.endpoint == 'customers' %}active{% endif %}"
+                        class="sidebar-link sidebar-sublink {% if request.endpoint in ('customers', 'add_customer', 'edit_customer') %}active{% endif %}"
                         href="{{ url_for('customers') }}"><span class="sub-dot"></span>Customer</a>{% endif %}
                 </div>
             </details>

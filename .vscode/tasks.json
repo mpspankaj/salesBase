@@ -1,16 +1,40 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Run SalesProduct app",
-      "type": "shell",
-      "command": "python",
-      "args": ["app.py"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run SalesProduct app",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"app.py"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart SalesProduct server",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$listener = Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue; if ($listener) { Stop-Process -Id $listener.OwningProcess -Force }; Start-Process -FilePath 'g:\\be10x\\SalesProduct\\.venv\\Scripts\\python.exe' -ArgumentList 'app.py' -WorkingDirectory 'g:\\be10x\\SalesProduct'"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Seed customer demo records once",
+			"type": "shell",
+			"command": "g:\\be10x\\SalesProduct\\.venv\\Scripts\\python.exe",
+			"args": [
+				"g:\\be10x\\SalesProduct\\seed_customers_once.py"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
 }

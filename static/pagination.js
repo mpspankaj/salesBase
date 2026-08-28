@@ -10,6 +10,8 @@
             pageStatusSelector: options.pageStatusSelector,
             previousSelector: options.previousSelector,
             nextSelector: options.nextSelector,
+            emptyRowSelector: options.emptyRowSelector,
+            itemLabel: options.itemLabel || 'item',
             storageKey: options.storageKey || 'client-pagination-page-size'
         };
         const rows = Array.from(document.querySelectorAll(settings.rowSelector));
@@ -19,6 +21,7 @@
         const pageStatus = document.querySelector(settings.pageStatusSelector);
         const previousButton = document.querySelector(settings.previousSelector);
         const nextButton = document.querySelector(settings.nextSelector);
+        const emptyRow = document.querySelector(settings.emptyRowSelector);
         let currentPage = 1;
 
         if (!searchInput || !pageSizeSelect || !resultCount || !pageStatus || !previousButton || !nextButton) {
@@ -39,13 +42,17 @@
             const pageCount = Math.max(1, Math.ceil(matchingRows.length / pageSize));
             currentPage = Math.min(currentPage, pageCount);
             const start = (currentPage - 1) * pageSize;
-            const visibleRows = new Set(matchingRows.slice(start, start + pageSize));
+            const visiblePageRows = matchingRows.slice(start, start + pageSize);
+            const visibleRows = new Set(visiblePageRows);
+            const firstVisible = matchingRows.length ? start + 1 : 0;
+            const lastVisible = start + visiblePageRows.length;
 
             rows.forEach((row) => {
                 row.hidden = !visibleRows.has(row);
             });
-            resultCount.textContent = `${matchingRows.length} item${matchingRows.length === 1 ? '' : 's'}`;
-            pageStatus.textContent = `Page ${currentPage} of ${pageCount}`;
+            if (emptyRow) emptyRow.hidden = matchingRows.length !== 0;
+            resultCount.textContent = `${matchingRows.length} ${settings.itemLabel}${matchingRows.length === 1 ? '' : 's'}`;
+            pageStatus.textContent = `Showing ${firstVisible}-${lastVisible} of ${matchingRows.length} | Page ${currentPage} of ${pageCount}`;
             previousButton.disabled = currentPage === 1;
             nextButton.disabled = currentPage === pageCount;
         }

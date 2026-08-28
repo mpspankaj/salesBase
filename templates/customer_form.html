@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit customer' if editing_customer else 'Add customer' }} | Sales{% endblock %}
+{% block content %}
+<section class="workspace-panel product-management-panel">
+    <div class="workspace-heading">
+        <div>
+            <p class="eyebrow">Customer catalogue</p>
+            <h1>{{ 'Edit the' if editing_customer else 'Add a' }} <em>customer.</em></h1>
+            <p class="dashboard-copy">{{ 'Update invoice and contact details.' if editing_customer else 'Create
+                invoice-ready customer details.' }}</p>
+        </div><a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Dashboard</a>
+    </div>
+    <nav class="product-tabs" aria-label="Customer sections"><a class="product-tab"
+            href="{{ url_for('customers') }}">Customer list</a><a class="product-tab active"
+            href="{{ url_for('add_customer') }}">{{ 'Edit customer' if editing_customer else 'Add customer' }}</a></nav>
+    <form class="workspace-form" method="post"
+        action="{{ url_for('edit_customer', customer_id=editing_customer['id']) if editing_customer else url_for('add_customer') }}"
+        novalidate onsubmit="return validateCustomerForm(event);">
+        <div class="form-grid product-form-grid">
+            {% set fields = [
+            ('name', 'Customer name', 'text', 120, true),
+            ('customer_code', 'Customer code', 'text', 40, true),
+            ('phone', 'Phone number', 'tel', 25, true),
+            ('email', 'Email address', 'email', 120, false),
+            ('tax_id', 'Tax ID / GSTIN', 'text', 120, false),
+            ('city', 'City', 'text', 80, false),
+            ('state', 'State', 'text', 80, false),
+            ('postal_code', 'Postal code', 'text', 20, false),
+            ('country', 'Country', 'text', 80, true)
+            ] %}
+            {% for name, label, type, maxlength, required in fields %}<div
+                class="field-group {% if field_errors.get(name) %}has-error{% endif %}"><label for="{{ name }}">{{ label
+                    }}</label><input id="{{ name }}" name="{{ name }}" type="{{ type }}" maxlength="{{ maxlength }}"
+                    value="{{ form_data.get(name, 'India' if name == 'country' else '')|e }}"
+                    class="{% if field_errors.get(name) %}is-invalid{% elif form_data.get(name) %}is-valid{% endif %}"
+                    {% if required %}required{% endif %}>{% if field_errors.get(name) %}<div class="field-error"
+                    role="alert">{{ field_errors.get(name) }}</div>{% endif %}</div>{% endfor %}
+            {% for name, label, required in [('billing_address', 'Billing address', true), ('shipping_address',
+            'Shipping address', false)] %}<div
+                class="field-group full-width-field {% if field_errors.get(name) %}has-error{% endif %}"><label
+                    for="{{ name }}">{{ label }}</label><textarea id="{{ name }}" name="{{ name }}" rows="3"
+                    maxlength="250" class="{% if field_errors.get(name) %}is-invalid{% endif %}" {% if required
+                    %}required{% endif %}>{{ form_data.get(name, '')|e }}</textarea>{% if field_errors.get(name) %}<div
+                    class="field-error" role="alert">{{ field_errors.get(name) }}</div>{% endif %}</div>{% endfor %}
+            <div class="field-group full-width-field {% if field_errors.get('notes') %}has-error{% endif %}"><label
+                    for="notes">Invoice notes</label><textarea id="notes" name="notes" rows="3" maxlength="500"
+                    class="{% if field_errors.get('notes') %}is-invalid{% endif %}">{{ form_data.get('notes', '')|e }}</textarea>{%
+                if field_errors.get('notes') %}<div class="field-error" role="alert">{{ field_errors.get('notes') }}
+                </div>{% endif %}</div>
+            <div class="field-group"><label for="status">Status</label><select id="status" name="status">
+                    <option value="active" {% if form_data.get('status', 'active' )=='active' %}selected{% endif %}>
+                        Active</option>
+                    <option value="inactive" {% if form_data.get('status')=='inactive' %}selected{% endif %}>Inactive
+                    </option>
+                </select></div>
+        </div>
+        <button class="btn btn-primary" type="submit">{{ 'Save changes' if editing_customer else 'Add customer' }} <span
+                aria-hidden="true">&#8594;</span></button>
+    </form>
+</section>
+<script>
+    const customerForm = document.querySelector('.workspace-form');
+    const customerRequiredMessages = { name: 'Customer name is required.', customer_code: 'Customer code is required.', phone: 'Phone number is required.', billing_address: 'Billing address is required.', country: 'Country is required.' };
+    function customerFieldError(field) {
+        const value = (field.value || '').trim(); const name = field.name;
+        if (field.required && !value) return customerRequiredMessages[name] || 'This field is required.';
+        if (name === 'name' && value && (value.length < 2 || value.length > 120)) return 'Customer name must be between 2 and 120 characters.';
+        if (name === 'customer_code' && value && !/^[A-Za-z0-9][A-Za-z0-9._-]{1,39}$/.test(value)) return 'Customer code format is invalid.';
+        if (name === 'phone' && value && !/(?=.*[0-9])[0-9+() .-]{7,25}$/.test(value)) return 'Phone number format is invalid.';
+        if (name === 'email' && value && !/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/.test(value)) return 'Email address format is invalid.';
+        if (name === 'tax_id' && value.length > 120) return 'Tax ID must be 120 characters or fewer.';
+        if (name === 'country' && value.length > 80) return 'Country must be 80 characters or fewer.';
+        if (name === 'billing_address' && value.length > 250) return 'Billing address must be 250 characters or fewer.';
+        if (name === 'shipping_address' && value.length > 250) return 'Shipping address must be 250 characters or fewer.';
+        if (name === 'notes' && value.length > 500) return 'Notes cannot exceed 500 characters.';
+        return '';
+    }
+    function renderCustomerField(field, showEmpty) {
+        const group = field.closest('.field-group'); if (!group) return true; const message = customerFieldError(field); const visible = message && (showEmpty || field.value.trim()); let error = group.querySelector('.field-error'); field.classList.remove('is-invalid', 'is-valid'); field.removeAttribute('aria-invalid');
+        if (visible) { field.classList.add('is-invalid'); field.setAttribute('aria-invalid', 'true'); if (!error) { error = document.createElement('div'); error.className = 'field-error'; error.setAttribute('role', 'alert'); group.appendChild(error); } error.textContent = message; return false; }
+        if (error) error.remove(); if (field.value.trim()) field.classList.add('is-valid'); return !message;
+    }
+    function validateCustomerForm(event) { let valid = true; customerForm.querySelectorAll('input,select,textarea').forEach((field) => { if (!renderCustomerField(field, true)) valid = false; }); if (!valid) { event.preventDefault(); const first = customerForm.querySelector('.is-invalid'); if (first) first.focus(); return false; } const button = customerForm.querySelector('button[type="submit"]'); if (button) button.disabled = true; return true; }
+    customerForm.querySelectorAll('input,select,textarea').forEach((field) => { field.addEventListener('blur', () => renderCustomerField(field, true)); field.addEventListener('input', () => renderCustomerField(field, true)); field.addEventListener('change', () => renderCustomerField(field, true)); });
+</script>
+{% endblock %}
